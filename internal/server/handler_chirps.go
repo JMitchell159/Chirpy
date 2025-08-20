@@ -5,24 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/JMitchell159/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
-func (cfg *ApiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body   string    `json:"body"`
 		UserID uuid.UUID `json:"user_id"`
-	}
-
-	type returnVal struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Body      string    `json:"body"`
-		UserID    uuid.UUID `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -43,6 +34,17 @@ func (cfg *ApiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.Contains(params.Body, "kerfuffle") || strings.Contains(params.Body, "sharbert") || strings.Contains(params.Body, "fornax") {
+		splitBody := strings.Split(params.Body, " ")
+		for i, word := range splitBody {
+			lower := strings.ToLower(word)
+			if lower == "kerfuffle" || lower == "sharbert" || lower == "fornax" {
+				splitBody[i] = "****"
+			}
+		}
+		params.Body = strings.Join(splitBody, " ")
+	}
+
 	chirp, err := cfg.DB.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   params.Body,
 		UserID: params.UserID,
@@ -55,23 +57,12 @@ func (cfg *ApiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respBody := returnVal{
+	respBody := Chirp{
 		ID:        chirp.ID,
 		CreatedAt: chirp.CreatedAt,
 		UpdatedAt: chirp.UpdatedAt,
 		Body:      chirp.Body,
 		UserID:    chirp.UserID,
-	}
-
-	if strings.Contains(respBody.Body, "kerfuffle") || strings.Contains(respBody.Body, "sharbert") || strings.Contains(respBody.Body, "fornax") {
-		splitBody := strings.Split(respBody.Body, " ")
-		for i, word := range splitBody {
-			lower := strings.ToLower(word)
-			if lower == "kerfuffle" || lower == "sharbert" || lower == "fornax" {
-				splitBody[i] = "****"
-			}
-		}
-		respBody.Body = strings.Join(splitBody, " ")
 	}
 
 	dat, err := json.Marshal(respBody)
@@ -85,5 +76,40 @@ func (cfg *ApiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
+	w.Write(dat)
+}
+
+func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.DB.GetChirps(r.Context())
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	result := make([]Chirp, len(chirps))
+	for i, chirp := range chirps {
+		result[i] = Chirp{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		}
+	}
+
+	dat, err := json.Marshal(result)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
 	w.Write(dat)
 }

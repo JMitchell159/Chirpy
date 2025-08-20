@@ -4,21 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 func (cfg *ApiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Email string `json:"email"`
-	}
-
-	type returnVal struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -41,7 +31,7 @@ func (cfg *ApiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := returnVal{
+	result := User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
