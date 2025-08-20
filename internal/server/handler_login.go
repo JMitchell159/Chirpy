@@ -1,15 +1,15 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/JMitchell159/chirpy/internal/auth"
-	"github.com/JMitchell159/chirpy/internal/database"
 )
 
-func (cfg *ApiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
@@ -26,24 +26,22 @@ func (cfg *ApiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := auth.HashPassword(params.Password)
-	if err != nil {
+	user, err := cfg.DB.GetUserByEmail(r.Context(), params.Email)
+	if err == sql.ErrNoRows {
+		w.Header().Set("Content-Type", "plain/text; charset=utf-8")
+		w.WriteHeader(401)
+		w.Write([]byte("Incorrect email or password"))
+		return
+	} else if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
 		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
 		w.Write([]byte(message))
 		return
-	}
-
-	user, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
-		Email:          params.Email,
-		HashedPassword: hash,
-	})
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(500)
-		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
-		w.Write([]byte(message))
+	} else if err = auth.CheckPasswordHash(params.Password, user.HashedPassword); err != nil {
+		w.Header().Set("Content-Type", "plain/text; charset=utf-8")
+		w.WriteHeader(401)
+		w.Write([]byte("Incorrect email or password"))
 		return
 	}
 
@@ -64,6 +62,6 @@ func (cfg *ApiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
+	w.WriteHeader(200)
 	w.Write(dat)
 }
