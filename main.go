@@ -27,6 +27,8 @@ func main() {
 	dbQueries := database.New(db)
 	apiCfg.DB = dbQueries
 
+	apiCfg.Platform = os.Getenv("PLATFORM")
+
 	server := apiCfg.CreateServer()
 	server.ListenAndServe()
 }
