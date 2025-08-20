@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -98,6 +99,51 @@ func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 			Body:      chirp.Body,
 			UserID:    chirp.UserID,
 		}
+	}
+
+	dat, err := json.Marshal(result)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write(dat)
+}
+
+func (cfg *ApiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request) {
+	arg := r.PathValue("chirp_id")
+	id, err := uuid.Parse(arg)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	chirp, err := cfg.DB.GetChirp(r.Context(), id)
+	if err == sql.ErrNoRows {
+		w.WriteHeader(404)
+		return
+	} else if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	result := Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
 	}
 
 	dat, err := json.Marshal(result)
