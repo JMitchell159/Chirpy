@@ -30,10 +30,7 @@ func (cfg *ApiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 
 	bearer_token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(500)
-		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
-		w.Write([]byte(message))
+		w.WriteHeader(401)
 		return
 	}
 
@@ -173,4 +170,57 @@ func (cfg *ApiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write(dat)
+}
+
+func (cfg *ApiConfig) handlerDeleteChirp(w http.ResponseWriter, r *http.Request) {
+	arg := r.PathValue("chirp_id")
+	id, err := uuid.Parse(arg)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	user, err := cfg.DB.GetUserByChirp(r.Context(), id)
+	if err == sql.ErrNoRows {
+		w.WriteHeader(404)
+		return
+	} else if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	jwt, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		w.WriteHeader(401)
+		return
+	}
+
+	uuid, err := auth.ValidateJWT(jwt, cfg.SecretToken)
+	if err != nil {
+		w.WriteHeader(403)
+		return
+	} else if uuid != user.ID {
+		w.WriteHeader(403)
+		return
+	}
+
+	err = cfg.DB.DeleteChirp(r.Context(), id)
+	if err == sql.ErrNoRows {
+		w.WriteHeader(404)
+		return
+	} else if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	w.WriteHeader(204)
 }

@@ -11,6 +11,7 @@ func (cfg *ApiConfig) CreateServer() *http.Server {
 	mux.HandleFunc("POST /api/chirps", cfg.handlerCreateChirp)
 	mux.HandleFunc("GET /api/chirps", cfg.handlerGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirp_id}", cfg.handlerGetChirp)
+	mux.HandleFunc("DELETE /api/chirps/{chirp_id}", cfg.handlerDeleteChirp)
 	mux.HandleFunc("POST /api/users", cfg.handlerUsersPost)
 	mux.HandleFunc("PUT /api/users", cfg.handlerUsersPut)
 	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
