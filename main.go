@@ -29,6 +29,8 @@ func main() {
 
 	apiCfg.Platform = os.Getenv("PLATFORM")
 
+	apiCfg.SecretToken = os.Getenv("SECRET_TOKEN")
+
 	server := apiCfg.CreateServer()
 	server.ListenAndServe()
 }
