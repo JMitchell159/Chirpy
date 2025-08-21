@@ -13,6 +13,8 @@ func (cfg *ApiConfig) CreateServer() *http.Server {
 	mux.HandleFunc("GET /api/chirps/{chirp_id}", cfg.handlerGetChirp)
 	mux.HandleFunc("POST /api/users", cfg.handlerUsers)
 	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
+	mux.HandleFunc("POST /api/refresh", cfg.handlerRefresh)
+	mux.HandleFunc("POST /api/revoke", cfg.handlerRevoke)
 	return &http.Server{
 		Addr:    ":8080",
 		Handler: mux,

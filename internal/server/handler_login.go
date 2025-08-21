@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/JMitchell159/chirpy/internal/auth"
+	"github.com/JMitchell159/chirpy/internal/database"
 )
 
 func (cfg *ApiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
@@ -79,12 +80,35 @@ func (cfg *ApiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refresh_token, err := auth.MakeRefreshToken()
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
+	_, err = cfg.DB.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refresh_token,
+		UserID:    user.ID,
+		ExpiresAt: time.Now().Add(1440 * time.Hour),
+	})
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+		w.Write([]byte(message))
+		return
+	}
+
 	result := User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
-		Token:     jwt,
+		ID:           user.ID,
+		CreatedAt:    user.CreatedAt,
+		UpdatedAt:    user.UpdatedAt,
+		Email:        user.Email,
+		Token:        jwt,
+		RefreshToken: refresh_token,
 	}
 
 	dat, err := json.Marshal(result)

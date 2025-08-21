@@ -16,3 +16,12 @@ DELETE FROM users;
 SELECT *
 FROM users
 WHERE email = $1;
+
+-- name: GetUserFromRefreshToken :one
+SELECT *
+FROM users
+WHERE users.id IN (
+    SELECT refresh_tokens.user_id
+    FROM refresh_tokens
+    WHERE token = $1
+);
