@@ -17,6 +17,7 @@ func (cfg *ApiConfig) CreateServer() *http.Server {
 	mux.HandleFunc("POST /api/login", cfg.handlerLogin)
 	mux.HandleFunc("POST /api/refresh", cfg.handlerRefresh)
 	mux.HandleFunc("POST /api/revoke", cfg.handlerRevoke)
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.handlerPolka)
 	return &http.Server{
 		Addr:    ":8080",
 		Handler: mux,
