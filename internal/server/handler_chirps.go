@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/JMitchell159/chirpy/internal/auth"
@@ -94,6 +95,7 @@ func (cfg *ApiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 
 func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	author := r.URL.Query().Get("author_id")
+	direction := r.URL.Query().Get("sort")
 
 	var chirps []database.Chirp
 
@@ -137,6 +139,10 @@ func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 			Body:      chirp.Body,
 			UserID:    chirp.UserID,
 		}
+	}
+
+	if direction == "desc" {
+		sort.Slice(result, func(i, j int) bool { return result[i].CreatedAt.Compare(result[j].CreatedAt) > 0 })
 	}
 
 	dat, err := json.Marshal(result)
