@@ -93,13 +93,39 @@ func (cfg *ApiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *ApiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.DB.GetChirps(r.Context())
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(500)
-		message := fmt.Sprintf("{\"error\":\"%s\"}", err)
-		w.Write([]byte(message))
-		return
+	author := r.URL.Query().Get("author_id")
+
+	var chirps []database.Chirp
+
+	if author == "" {
+		temp, err := cfg.DB.GetChirps(r.Context())
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(500)
+			message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+			w.Write([]byte(message))
+			return
+		}
+
+		chirps = temp
+	} else {
+		author_id, err := uuid.Parse(author)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(500)
+			message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+			w.Write([]byte(message))
+			return
+		}
+
+		chirps, err = cfg.DB.GetChirpsByAuthor(r.Context(), author_id)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(500)
+			message := fmt.Sprintf("{\"error\":\"%s\"}", err)
+			w.Write([]byte(message))
+			return
+		}
 	}
 
 	result := make([]Chirp, len(chirps))
