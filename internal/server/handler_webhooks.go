@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/JMitchell159/chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -28,6 +29,15 @@ func (cfg *ApiConfig) handlerPolka(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if params.Event != "user.upgraded" {
 		w.WriteHeader(204)
+		return
+	}
+
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		w.WriteHeader(401)
+		return
+	} else if apiKey != cfg.PolkaKey {
+		w.WriteHeader(401)
 		return
 	}
 

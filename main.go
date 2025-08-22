@@ -31,6 +31,8 @@ func main() {
 
 	apiCfg.SecretToken = os.Getenv("SECRET_TOKEN")
 
+	apiCfg.PolkaKey = os.Getenv("POLKA_KEY")
+
 	server := apiCfg.CreateServer()
 	server.ListenAndServe()
 }
